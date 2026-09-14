@@ -40,6 +40,15 @@ int main(void) {
     long n = DEFAULT_N;
     double best_time = 1000000.0;
 
+    struct timespec resolution;
+
+    if (clock_getres(CLOCK_MONOTONIC_RAW, &resolution) == 0) {
+        printf("Timer resolution: %ld s, %ld ns\n",
+            (long)resolution.tv_sec, (long)resolution.tv_nsec);
+    } else {
+        perror("clock_getres");
+    }
+
     printf("N = %ld\n\n", n);
 
     for (int i = 0; i < MEASURE_REPEATS; i++) {
