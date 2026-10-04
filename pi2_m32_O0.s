@@ -6,10 +6,11 @@ leibniz_calculation_of_pi:
         fstpl   -8(%ebp)
         fld1
         fstpl   -16(%ebp)
+        movl    $0, -24(%ebp)
         movl    $0, -20(%ebp)
         jmp     .L2
 .L3:
-        fildl   -20(%ebp)
+        fildq   -24(%ebp)
         fld     %st(0)
         faddp   %st, %st(1)
         fld1
@@ -25,10 +26,14 @@ leibniz_calculation_of_pi:
         fldl    -16(%ebp)
         fchs
         fstpl   -16(%ebp)
-        addl    $1, -20(%ebp)
+        addl    $1, -24(%ebp)
+        adcl    $0, -20(%ebp)
 .L2:
-        movl    -20(%ebp), %eax
-        cmpl    8(%ebp), %eax
+        movl    8(%ebp), %eax
+        cltd
+        movl    -20(%ebp), %ecx
+        cmpl    %eax, -24(%ebp)
+        sbbl    %edx, %ecx
         jl      .L3
         fldl    -8(%ebp)
         leave
@@ -36,7 +41,7 @@ leibniz_calculation_of_pi:
 .LC4:
         .string "Error: N must be positive\n"
 .LC6:
-        .string "N = %ld\n"
+        .string "N = %lld\n"
 .LC7:
         .string "Pi = %.15f\n"
 .LC8:
@@ -50,7 +55,8 @@ main:
         pushl   %ecx
         subl    $36, %esp
         movl    %ecx, %eax
-        movl    $-1963183581, -12(%ebp)
+        movl    $-1963183581, -16(%ebp)
+        movl    $3, -12(%ebp)
         cmpl    $1, (%eax)
         jle     .L6
         movl    4(%eax), %eax
@@ -60,9 +66,14 @@ main:
         pushl   %eax
         call    atol
         addl    $16, %esp
-        movl    %eax, -12(%ebp)
-        cmpl    $0, -12(%ebp)
-        jg      .L6
+        cltd
+        movl    %eax, -16(%ebp)
+        movl    %edx, -12(%ebp)
+        movl    $0, %edx
+        movl    $0, %eax
+        cmpl    -16(%ebp), %edx
+        sbbl    -12(%ebp), %eax
+        jl      .L6
         movl    stderr, %eax
         pushl   %eax
         pushl   $26
@@ -73,8 +84,9 @@ main:
         movl    $1, %eax
         jmp     .L7
 .L6:
+        movl    -16(%ebp), %eax
         subl    $12, %esp
-        pushl   -12(%ebp)
+        pushl   %eax
         call    leibniz_calculation_of_pi
         addl    $16, %esp
         fstpl   -24(%ebp)
@@ -83,8 +95,9 @@ main:
         fsubrp  %st, %st(1)
         fabs
         fstpl   -32(%ebp)
-        subl    $8, %esp
+        subl    $4, %esp
         pushl   -12(%ebp)
+        pushl   -16(%ebp)
         pushl   $.LC6
         call    printf
         addl    $16, %esp
