@@ -38,7 +38,7 @@ leibniz_calculation_of_pi:
 .LC4:
         .string "Error: N must be positive\n"
 .LC7:
-        .string "N = %ld\n"
+        .string "N = %lld\n"
 .LC8:
         .string "Pi = %.15f\n"
 .LC9:
