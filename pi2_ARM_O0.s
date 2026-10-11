@@ -1,8 +1,8 @@
 leibniz_calculation_of_pi:
-        push    {r4, r5, r7, r8, r9, lr}
+        push    {r4, r5, r7, lr}
         sub     sp, sp, #40
         add     r7, sp, #0
-        str     r0, [r7, #4]
+        strd    r0, [r7]
         mov     r2, #0
         mov     r3, #0
         strd    r2, [r7, #32]
@@ -34,24 +34,21 @@ leibniz_calculation_of_pi:
         vneg.f64        d7, d7
         vstr.64 d7, [r7, #24]
         ldrd    r2, [r7, #16]
-        adds    r8, r2, #1
-        adc     r9, r3, #0
-        strd    r8, [r7, #16]
+        adds    r4, r2, #1
+        adc     r5, r3, #0
+        strd    r4, [r7, #16]
 .L2:
-        ldr     r3, [r7, #4]
-        asrs    r2, r3, #31
-        mov     r4, r3
-        mov     r5, r2
-        ldrd    r2, [r7, #16]
-        cmp     r2, r4
-        sbcs    r3, r3, r5
+        ldrd    r0, [r7, #16]
+        ldrd    r2, [r7]
+        cmp     r0, r2
+        sbcs    r3, r1, r3
         blt     .L3
         ldrd    r2, [r7, #32]
         vmov    d7, r2, r3
         vmov.f64        d0, d7
         adds    r7, r7, #40
         mov     sp, r7
-        pop     {r4, r5, r7, r8, r9, pc}
+        pop     {r4, r5, r7, pc}
 .LC0:
         .ascii  "Error: N must be positive\012\000"
 .LC1:
@@ -97,8 +94,7 @@ main:
         movs    r3, #1
         b       .L7
 .L6:
-        ldr     r3, [r7, #24]
-        mov     r0, r3
+        ldrd    r0, [r7, #24]
         bl      leibniz_calculation_of_pi
         vstr.64 d0, [r7, #16]
         vldr.64 d7, [r7, #16]
@@ -129,6 +125,5 @@ main:
         .word   1074340347
         .word   -1963183581
         .word   3
-
 
         
