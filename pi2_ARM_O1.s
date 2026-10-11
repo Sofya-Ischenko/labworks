@@ -1,10 +1,11 @@
 leibniz_calculation_of_pi:
         push    {r3, r4, r5, r6, r7, lr}
         vpush.64        {d8, d9, d10, d11, d12}
-        cmp     r0, #0
-        ble     .L4
+        cmp     r0, #1
+        sbcs    r3, r1, #0
+        blt     .L4
         mov     r6, r0
-        asrs    r7, r0, #31
+        mov     r7, r1
         movs    r4, #0
         mov     r5, r4
         vmov.f64        d8, #1.0e+0
@@ -26,9 +27,9 @@ leibniz_calculation_of_pi:
         adc     r3, r5, #0
         mov     r4, r2
         mov     r5, r3
-        cmp     r3, r7
+        cmp     r7, r3
         it      eq
-        cmpeq   r2, r6
+        cmpeq   r6, r2
         bne     .L3
 .L1:
         vmov.f64        d0, d9
@@ -66,6 +67,7 @@ main:
         blt     .L14
 .L10:
         mov     r0, r4
+        mov     r1, r5
         bl      leibniz_calculation_of_pi
         vmov.f64        d8, d0
         mov     r2, r4
@@ -107,6 +109,5 @@ main:
 .L15:
         .word   1413754136
         .word   1074340347
-
 
         
