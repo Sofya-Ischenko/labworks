@@ -10,79 +10,50 @@ double get_time_sec(clockid_t clock_type) {
 
 class PerformanceTracker {
 private:
-    int frame_count;                        // Счетчик кадров за текущую секунду
-    double cpu_time;                        // Сумма времени CPU за текущую секунду
-    double program_start_time;              // Время старта программы
-    double real_time_start;                 // Время старта текущей секунды
-    int total_frames;                       // Общее число кадров за всё время работы
-    double total_cpu_time;                  // Общее время CPU за всё время работы
-    double max_fps_record;                  // Рекорд: максимальный FPS за всё время
-    double min_cpu_ms_record;               // Рекорд: минимальное время CPU на кадр
-    double min_load_percent_record;         // Рекорд: минимальная загрузка CPU
+    double time_input;
+    double time_process;
+    double time_display;
+
+    double program_start_time;
+    int total_frames;
 
 public:
     PerformanceTracker() {
-        frame_count = 0;
-        cpu_time = 0.0;
-        program_start_time = get_time_sec(CLOCK_MONOTONIC);
-        real_time_start = program_start_time;
+        time_input = 0.0;
+        time_process = 0.0;
+        time_display = 0.0;
         total_frames = 0;
-        total_cpu_time = 0.0;
-        max_fps_record = 0.0;
-        min_cpu_ms_record = 999999.0;
-        min_load_percent_record = 100.0;
+        program_start_time = get_time_sec(CLOCK_MONOTONIC);
     }
 
-    void update(double current_cpu_time) {
-        cpu_time += current_cpu_time;
-        frame_count++;
+    void addTimes(double t_input, double t_process, double t_display) {
+        time_input += t_input;
+        time_process += t_process;
+        time_display += t_display;
         total_frames++;
-        total_cpu_time += current_cpu_time;
-
-        double real_time_now = get_time_sec(CLOCK_MONOTONIC);
-        
-        if ((real_time_now - real_time_start) >= 1.0) {
-            double fps = frame_count / (real_time_now - real_time_start);
-            double avg_cpu_ms = (cpu_time / frame_count) * 1000.0;
-            double total_iteration_time_ms = avg_cpu_ms + 33.0;
-            double cpu_load_percent = (avg_cpu_ms / total_iteration_time_ms) * 100.0;
-
-            std::cout << "----------------------------------------" << std::endl;
-            std::cout << "FPS: " << fps << std::endl;
-            std::cout << "Ср. время CPU на кадр: " << avg_cpu_ms << " мс" << std::endl;
-            std::cout << "Доля загрузки CPU: " << cpu_load_percent << " %" << std::endl;
-
-            if (fps > max_fps_record) max_fps_record = fps;
-            if (avg_cpu_ms < min_cpu_ms_record) min_cpu_ms_record = avg_cpu_ms;
-            if (cpu_load_percent < min_load_percent_record) min_load_percent_record = cpu_load_percent;
-
-            frame_count = 0;
-            cpu_time = 0.0;
-            real_time_start = real_time_now;
-        }
     }
 
     void printFinalReport() const {
         double total_program_time = get_time_sec(CLOCK_MONOTONIC) - program_start_time;
-        double overall_avg_fps = total_frames / total_program_time;
-        double overall_avg_cpu_ms = (total_cpu_time / total_frames) * 1000.0;
-        double overall_avg_load = (overall_avg_cpu_ms / (overall_avg_cpu_ms + 33.0)) * 100.0;
+        
+        double avg_fps = total_frames / total_program_time;
+
+        double percent_input = (time_input / total_program_time) * 100.0;
+        double percent_process = (time_process / total_program_time) * 100.0;
+        double percent_display = (time_display / total_program_time) * 100.0;
 
         std::cout << std::endl;
         std::cout << "        ИТОГОВЫЕ РЕЗУЛЬТАТЫ             " << std::endl;
         std::cout << std::endl;
-        std::cout << "Всего обработано кадров: " << total_frames << std::endl;
-        std::cout << "Общее время работы:      " << total_program_time << " сек." << std::endl;
-        std::cout <<  std::endl;
-        std::cout << "Средний FPS (за все время): " << overall_avg_fps << std::endl;
-        std::cout << "Среднее время CPU на кадр:  " << overall_avg_cpu_ms << " мс" << std::endl;
-        std::cout << "Средняя доля загрузки CPU:  " << overall_avg_load << " %" << std::endl;
+        std::cout << "Всего кадров: " << total_frames << std::endl;
+        std::cout << "Общее время:  " << total_program_time << " сек." << std::endl;
+        std::cout << "Средний FPS:  " << avg_fps << std::endl;
         std::cout << std::endl;
-        std::cout << "         ЛУЧШИЕ ПОКАЗАТЕЛИ             " << std::endl;
+        std::cout << "Доля времени процессора по этапам:" << std::endl;
+        std::cout << "  Ввод:              " << percent_input << " %" << std::endl;
+        std::cout << "  Преобразование:    " << percent_process << " %" << std::endl;
+        std::cout << "  Показ:             " << percent_display << " %" << std::endl;
         std::cout << std::endl;
-        std::cout << "Максимальный FPS:         " << max_fps_record << std::endl;
-        std::cout << "Минимальное время CPU:    " << min_cpu_ms_record << " мс" << std::endl;
-        std::cout << "Минимальная загрузка CPU: " << min_load_percent_record << " %" << std::endl;
     }
 };
 
@@ -101,12 +72,17 @@ int main() {
     PerformanceTracker tracker;
 
     while (true) {
-        double cpu_start = get_time_sec(CLOCK_PROCESS_CPUTIME_ID);
+
+        double t1_start = get_time_sec(CLOCK_PROCESS_CPUTIME_ID);
         capture >> frame;
 
         if (frame.empty()) 
             break;
 
+        double t1_end = get_time_sec(CLOCK_PROCESS_CPUTIME_ID);
+        double time_input = t1_end - t1_start;
+
+        double t2_start = get_time_sec(CLOCK_PROCESS_CPUTIME_ID);
         gray_frame = frame.clone();
 
         for (int y = 0; y < gray_frame.rows; y++) {
@@ -121,15 +97,18 @@ int main() {
 
         blur_frame = frame.clone();
         cv::blur(blur_frame, blur_frame, cv::Size(9, 9));
+        
+        double t2_end = get_time_sec(CLOCK_PROCESS_CPUTIME_ID);
+        double time_process = t2_end - t2_start;
 
+        double t3_start = get_time_sec(CLOCK_PROCESS_CPUTIME_ID);
         cv::imshow("Blur", blur_frame);
         cv::imshow("Gray", gray_frame);
         cv::imshow("Original", frame);
+        double t3_end = get_time_sec(CLOCK_PROCESS_CPUTIME_ID);
+        double time_display = t3_end - t3_start;
 
-        double cpu_end = get_time_sec(CLOCK_PROCESS_CPUTIME_ID);
-        double current_cpu_time = cpu_end - cpu_start;
-        
-        tracker.update(current_cpu_time);
+        tracker.addTimes(time_input, time_process, time_display);
 
         if ((char)cv::waitKey(33) == 27) 
             break; 
